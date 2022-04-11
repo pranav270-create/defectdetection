@@ -53,43 +53,48 @@ class Detector_RCNN(nn.Module):
 
 class Classifier_CNN(nn.Module):
     
-    def conv_block(self, in_channels, out_channels, kernel, stride = 1, padding = 'same', bias = True):
-        return nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=kernel, stride= stride, padding = padding, bias=True),
-            nn.Conv2d(in_channels, out_channels, kernel_size=kernel, stride= stride, padding = padding, bias=True),
-            nn.Conv2d(in_channels, out_channels, kernel_size=kernel, stride= stride, padding = padding, bias=True)
-        )
-
-    def norm_act(self, p, size, alpha):
-        return nn.Sequential(
-            nn.Dropout2d(p = p),
-            nn.BatchNorm2d(size, affine=True, track_running_stats=True),
-            nn.LeakyReLU(negative_slope = alpha)
-            )
-
-
     def __init__(self, width = 0.01):
         super(Classifier_CNN, self).__init__()
 
         # define network topology
-        self.c1 = conv_block(self, 3, 32, 3)
-        self.n1 = norm_act(self, 0.3, 32, 0.05)
+        self.c1 = nn.Sequential(
+            nn.Conv2d(3, 32, kernel_size=3, stride= 1, padding = 'same', bias=True),
+            nn.Conv2d(32, 32, kernel_size=3, stride= 1, padding = 'same', bias=True),
+            nn.Conv2d(32, 32, kernel_size=3, stride= 1, padding = 'same', bias=True)
+        )
+        self.n1 = nn.Sequential(
+            nn.Dropout2d(p = 0.3),
+            nn.BatchNorm2d(32, affine=True, track_running_stats=True),
+            nn.LeakyReLU(negative_slope = 0.05)
+        )
 
-        self.c2 = conv_block(self, 32, 64, 3)
-        self.n2 = norm_act(self, 0.3, 64, 0.05)
+        self.c2 = nn.Sequential(
+            nn.Conv2d(32, 64, kernel_size=3, stride= 1, padding = 'same', bias=True),
+            nn.Conv2d(64, 64, kernel_size=3, stride= 1, padding = 'same', bias=True),
+            nn.Conv2d(64, 64, kernel_size=3, stride= 1, padding = 'same', bias=True)
+        )
+        self.n2 = nn.Sequential(
+            nn.Dropout2d(p = 0.3),
+            nn.BatchNorm2d(64, affine=True, track_running_stats=True),
+            nn.LeakyReLU(negative_slope = 0.05)
+        )
 
-        self.c3 = conv_block(self, 64, 128, 3)
-        self.n3 = norm_act(self, 0.3, 128, 0.05)
+        self.c3 = nn.Sequential(
+            nn.Conv2d(64, 128, kernel_size=3, stride= 2, bias=True),
+        )
+        self.n3 = nn.Sequential(
+            nn.Dropout2d(p = 0.3),
+            nn.BatchNorm2d(128, affine=True, track_running_stats=True),
+            nn.LeakyReLU(negative_slope = 0.05)
+        )
 
-        self.linear = nn.Linear(15488,1, bias=True)
-
+        self.linear = nn.Linear(25600,1, bias=True)
         self.maxpool = nn.MaxPool2d(2)
+        self.activation = nn.Sigmoid()
+
+        self.layers = nn.ModuleDict({'cv1': self.c1, 'cv2': self.c2, 'cv3': self.c3})
         
         # initialize weights
-        for layer in self.layers.keys():
-            if('conv' == layer[:-1]):
-                # from pytorch init documentation https://pytorch.org/docs/stable/nn.init.html
-                nn.init.normal_(self.layers[layer].weight, mean=0, std=width)
 
     def forward(self, x):
         
@@ -100,14 +105,11 @@ class Classifier_CNN(nn.Module):
         x = self.maxpool(output2)
 
         output3 = self.n3(self.c3(x))
-        x = self.maxpool(output3)
 
         # flatten x before the fully connected layer via pytorch's view function
         x = x.view(x.size(0), -1)
-        x = nn.Sigmoid(self.linear(x))
+        x = self.activation(self.linear(x))
 
         return x
 
-    def loss(self):
-        return nn.CrossEntropyLoss()
 
