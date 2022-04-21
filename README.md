@@ -11,4 +11,4 @@ Note: Use unaugmented 512x512 images
 - Hough Transform is a notebook that creates a custom data set (D = 1000) for parameter fine tuning, p1 p2 blur minR and maxR as well as calculates the relevant metrics of num misses, inference time, and average IOU score.
 - Full Sequence reads in a blank or populated image from the RealSense Viewer and tests the whole pipeline by outputting an action for the Franka Arm to move to.
 
-- Networks.py, Hough.py, CNNClassifier.py, CNN_Implementation_torch.py, kmeans.py, utils.py are all depreciated files that were used in earlier iterations.
+- Networks.py, Hough.py, CNNClassifier.py, Networks_Implementation_Torch.py, kmeans.py, utils.py are all depreciated files that were used in earlier iterations.
